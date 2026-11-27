@@ -4,6 +4,7 @@ import sqlite3
 import sys
 import time
 import urllib.request
+import base64
 from pathlib import Path
 from pages.login_page import LoginPage
 from playwright.sync_api import Page
@@ -89,3 +90,20 @@ def second_api():
 def db_helper(db):
     """SQL shortcuts built on the db connection."""
     return DbHelper(db)
+@pytest.hookimpl(hookwrapper=True)
+def pytest_runtest_makereport(item, call):
+    """After each test, if a UI test failed, attach a screenshot to the HTML report."""
+    outcome = yield
+    report = outcome.get_result()
+    if report.when != "call" or not report.failed:
+        return
+    page = item.funcargs.get("page")  # API and DB tests have no page
+    if page is None:
+        return
+    try:
+        from pytest_html import extras
+
+        png = base64.b64encode(page.screenshot()).decode("utf-8")
+        report.extras = getattr(report, "extras", []) + [extras.png(png, "Failure screenshot")]
+    except Exception:
+        pass  # never let a screenshot problem hide the real test failure
