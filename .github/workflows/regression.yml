@@ -1,0 +1,40 @@
+name: Nightly regression
+
+on:
+  schedule:
+    - cron: "30 20 * * *"   # 20:30 UTC every day (2:00 AM India time)
+  workflow_dispatch:
+
+jobs:
+  regression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Check out the code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Install Chromium
+        run: playwright install --with-deps chromium
+
+      - name: Run the full suite
+        run: pytest
+
+      - name: Upload report, traces and screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: regression-results
+          path: |
+            reports/
+            test-results/
+          if-no-files-found: ignore
+          retention-days: 30
