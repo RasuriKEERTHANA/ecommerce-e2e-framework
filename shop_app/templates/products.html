@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+{% block title %}Products - Test Shop{% endblock %}
+
+{% block content %}
+<h1>Products</h1>
+
+<div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
+  <input type="text" id="search" placeholder="Search products" data-testid="search-input">
+  <select id="category" data-testid="category-filter">
+    <option value="">All categories</option>
+    <option value="Electronics">Electronics</option>
+    <option value="Footwear">Footwear</option>
+    <option value="Clothing">Clothing</option>
+    <option value="Accessories">Accessories</option>
+  </select>
+  <button id="search-btn" data-testid="search-button">Search</button>
+</div>
+
+<div id="message" role="alert" data-testid="products-message"></div>
+<p id="result-count" data-testid="result-count"></p>
+<div id="product-list" data-testid="product-list"></div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  const messageBox = document.getElementById("message");
+  const listBox = document.getElementById("product-list");
+
+  function showMessage(text, isError) {
+    messageBox.textContent = text;
+    messageBox.className = isError ? "error" : "success";
+  }
+
+  async function loadProducts() {
+    const search = document.getElementById("search").value.trim();
+    const category = document.getElementById("category").value;
+    const params = new URLSearchParams();
+    if (search) params.set("search", search);
+    if (category) params.set("category", category);
+
+    const res = await api("/api/products?" + params.toString());
+    listBox.innerHTML = "";
+    document.getElementById("result-count").textContent = res.data.length + " product(s) found";
+
+    if (res.data.length === 0) {
+      const empty = document.createElement("p");
+      empty.setAttribute("data-testid", "no-results");
+      empty.textContent = "No products found";
+      listBox.appendChild(empty);
+      return;
+    }
+
+    res.data.forEach((p) => {
+      const card = document.createElement("div");
+      card.setAttribute("data-testid", "product-card");
+      card.style.cssText = "border:1px solid #ddd; padding:12px; margin-top:10px; border-radius:6px;";
+
+      const name = document.createElement("strong");
+      name.setAttribute("data-testid", "product-name");
+      name.textContent = p.name;
+
+      const info = document.createElement("div");
+      info.innerHTML = '<span data-testid="product-category"></span> | $<span data-testid="product-price"></span> | <span data-testid="product-stock"></span>';
+      info.querySelector('[data-testid="product-category"]').textContent = p.category;
+      info.querySelector('[data-testid="product-price"]').textContent = p.price.toFixed(2);
+      info.querySelector('[data-testid="product-stock"]').textContent =
+        p.stock > 0 ? p.stock + " in stock" : "Out of stock";
+
+      const btn = document.createElement("button");
+      btn.textContent = "Add to cart";
+      btn.setAttribute("data-testid", "add-to-cart-" + p.id);
+      btn.addEventListener("click", () => addToCart(p));
+
+      card.append(name, info, btn);
+      listBox.appendChild(card);
+    });
+  }
+
+  async function addToCart(product) {
+    if (!getToken()) {
+      showMessage("Please log in to add items to your cart", true);
+      return;
+    }
+    const res = await api("/api/cart", {
+      method: "POST",
+      body: JSON.stringify({ product_id: product.id, quantity: 1 }),
+    });
+    if (res.ok) {
+      showMessage("Added " + product.name + " to cart", false);
+    } else {
+      showMessage(res.data && res.data.detail ? res.data.detail : "Could not add to cart", true);
+    }
+  }
+
+  document.getElementById("search-btn").addEventListener("click", loadProducts);
+  document.getElementById("search").addEventListener("keydown", (e) => {
+    if (e.key === "Enter") loadProducts();
+  });
+  document.getElementById("category").addEventListener("change", loadProducts);
+
+  loadProducts();
+</script>
+{% endblock %}

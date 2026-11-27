@@ -194,3 +194,6 @@ def home():
 @app.get("/login", response_class=HTMLResponse, include_in_schema=False)
 def login_page(request: Request):
     return templates.TemplateResponse(request, "login.html")
+@app.get("/products", response_class=HTMLResponse, include_in_schema=False)
+def products_page(request: Request):
+    return templates.TemplateResponse(request, "products.html")
