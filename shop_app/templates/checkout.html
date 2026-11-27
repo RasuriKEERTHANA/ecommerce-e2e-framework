@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% block title %}Checkout - Test Shop{% endblock %}
+
+{% block content %}
+<h1>Checkout</h1>
+<p id="order-total" data-testid="checkout-total"></p>
+
+<form id="checkout-form" data-testid="checkout-form" novalidate>
+  <label>Full name
+    <input type="text" id="full-name" data-testid="checkout-name">
+  </label>
+  <label>Address
+    <input type="text" id="address" data-testid="checkout-address">
+  </label>
+  <label>Card number (16 digits)
+    <input type="text" id="card" data-testid="checkout-card">
+  </label>
+  <br><br>
+  <button type="submit" data-testid="place-order">Place order</button>
+</form>
+
+<div id="checkout-error" class="error" role="alert" data-testid="checkout-error"></div>
+<div id="order-success" class="success" data-testid="order-success"></div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  const errorBox = document.getElementById("checkout-error");
+  const successBox = document.getElementById("order-success");
+
+  async function showTotal() {
+    if (!getToken()) return;
+    const res = await api("/api/cart");
+    if (res.ok) {
+      document.getElementById("order-total").textContent = "Order total: $" + res.data.total.toFixed(2);
+    }
+  }
+
+  document.getElementById("checkout-form").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    errorBox.textContent = "";
+    successBox.textContent = "";
+
+    if (!getToken()) {
+      errorBox.textContent = "Please log in to check out";
+      return;
+    }
+
+    const name = document.getElementById("full-name").value.trim();
+    const address = document.getElementById("address").value.trim();
+    const card = document.getElementById("card").value.replace(/\s/g, "");
+
+    if (!name || !address || !card) {
+      errorBox.textContent = "All fields are required";
+      return;
+    }
+    if (!/^\d{16}$/.test(card)) {
+      errorBox.textContent = "Invalid card number";
+      return;
+    }
+
+    const res = await api("/api/orders", { method: "POST" });
+    if (res.ok) {
+      successBox.textContent = "Order #" + res.data.order_id + " placed successfully. Total: $" + res.data.total.toFixed(2);
+      document.getElementById("order-total").textContent = "";
+      document.getElementById("checkout-form").reset();
+    } else {
+      errorBox.textContent = res.data && res.data.detail ? res.data.detail : "Order failed";
+    }
+  });
+
+  showTotal();
+</script>
+{% endblock %}

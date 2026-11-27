@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+{% block title %}Cart - Test Shop{% endblock %}
+
+{% block content %}
+<h1>Your cart</h1>
+<div id="cart-message" role="alert" data-testid="cart-message"></div>
+<div id="cart-items" data-testid="cart-items"></div>
+<p id="cart-total" data-testid="cart-total"></p>
+<button id="checkout-btn" data-testid="checkout-button" style="display:none">Proceed to checkout</button>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  const msg = document.getElementById("cart-message");
+  const itemsBox = document.getElementById("cart-items");
+  const totalBox = document.getElementById("cart-total");
+  const checkoutBtn = document.getElementById("checkout-btn");
+
+  function renderCart(cart) {
+    itemsBox.innerHTML = "";
+    msg.textContent = "";
+
+    if (cart.items.length === 0) {
+      const empty = document.createElement("p");
+      empty.setAttribute("data-testid", "empty-cart");
+      empty.textContent = "Your cart is empty";
+      itemsBox.appendChild(empty);
+      totalBox.textContent = "";
+      checkoutBtn.style.display = "none";
+      return;
+    }
+
+    cart.items.forEach((item) => {
+      const row = document.createElement("div");
+      row.setAttribute("data-testid", "cart-item");
+      row.style.cssText = "border:1px solid #ddd; padding:12px; margin-top:10px; border-radius:6px;";
+
+      const name = document.createElement("strong");
+      name.setAttribute("data-testid", "cart-item-name");
+      name.textContent = item.name;
+
+      const info = document.createElement("div");
+      info.innerHTML = 'Qty: <span data-testid="cart-item-qty"></span> | Price: $<span data-testid="cart-item-price"></span> | Line total: $<span data-testid="cart-item-total"></span>';
+      info.querySelector('[data-testid="cart-item-qty"]').textContent = item.quantity;
+      info.querySelector('[data-testid="cart-item-price"]').textContent = item.price.toFixed(2);
+      info.querySelector('[data-testid="cart-item-total"]').textContent = item.line_total.toFixed(2);
+
+      const btn = document.createElement("button");
+      btn.textContent = "Remove";
+      btn.setAttribute("data-testid", "remove-" + item.product_id);
+      btn.addEventListener("click", () => removeItem(item.product_id));
+
+      row.append(name, info, btn);
+      itemsBox.appendChild(row);
+    });
+
+    totalBox.innerHTML = 'Total: $<span data-testid="cart-total-value"></span>';
+    totalBox.querySelector("span").textContent = cart.total.toFixed(2);
+    checkoutBtn.style.display = "inline";
+  }
+
+  async function loadCart() {
+    if (!getToken()) {
+      msg.textContent = "Please log in to view your cart";
+      msg.className = "error";
+      return;
+    }
+    const res = await api("/api/cart");
+    if (res.ok) {
+      renderCart(res.data);
+    } else {
+      msg.textContent = res.data && res.data.detail ? res.data.detail : "Could not load cart";
+      msg.className = "error";
+    }
+  }
+
+  async function removeItem(productId) {
+    const res = await api("/api/cart/" + productId, { method: "DELETE" });
+    if (res.ok) {
+      renderCart(res.data);
+    } else {
+      msg.textContent = res.data && res.data.detail ? res.data.detail : "Could not remove item";
+      msg.className = "error";
+    }
+  }
+
+  checkoutBtn.addEventListener("click", () => { window.location.href = "/checkout"; });
+  loadCart();
+</script>
+{% endblock %}

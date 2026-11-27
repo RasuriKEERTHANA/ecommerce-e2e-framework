@@ -197,3 +197,11 @@ def login_page(request: Request):
 @app.get("/products", response_class=HTMLResponse, include_in_schema=False)
 def products_page(request: Request):
     return templates.TemplateResponse(request, "products.html")
+@app.get("/cart", response_class=HTMLResponse, include_in_schema=False)
+def cart_page(request: Request):
+    return templates.TemplateResponse(request, "cart.html")
+
+
+@app.get("/checkout", response_class=HTMLResponse, include_in_schema=False)
+def checkout_page(request: Request):
+    return templates.TemplateResponse(request, "checkout.html")
