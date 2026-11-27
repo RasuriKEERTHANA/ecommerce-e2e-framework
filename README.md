@@ -80,3 +80,4 @@ Open http://127.0.0.1:8000/login (user `test@example.com`, password `Password123
 - Passwords are stored as plain text and tokens are simple strings (`token-<id>`). This is a test app, and real systems use hashing and JWTs.
 - SQLite does not enforce foreign keys unless enabled, so integrity is checked with queries.
 - Card validation happens in the browser, not on the server.
+  
