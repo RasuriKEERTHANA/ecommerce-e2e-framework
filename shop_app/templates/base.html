@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>{% block title %}Test Shop{% endblock %}</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 0; background: #f5f5f5; }
+    nav { background: #222; padding: 12px 24px; display: flex; gap: 20px; align-items: center; }
+    nav a { color: #fff; text-decoration: none; }
+    nav .spacer { flex: 1; }
+    main { max-width: 900px; margin: 24px auto; background: #fff; padding: 24px; border-radius: 6px; }
+    input, button { padding: 8px; font-size: 14px; }
+    label { display: block; margin-top: 12px; }
+    .error { color: #b00020; margin-top: 12px; }
+    .success { color: #1b7f3b; margin-top: 12px; }
+  </style>
+</head>
+<body>
+  <nav>
+    <a href="/products" data-testid="nav-products">Products</a>
+    <a href="/cart" data-testid="nav-cart">Cart</a>
+    <span class="spacer"></span>
+    <span id="nav-user" data-testid="nav-user" style="color:#ccc"></span>
+    <a href="/login" id="nav-login" data-testid="nav-login">Login</a>
+    <a href="#" id="nav-logout" data-testid="nav-logout" style="display:none">Logout</a>
+  </nav>
+
+  <main>
+    {% block content %}{% endblock %}
+  </main>
+
+  <script>
+    // Shared helpers used by every page
+    function getToken() { return localStorage.getItem("token"); }
+
+    async function api(path, options = {}) {
+      const headers = { "Content-Type": "application/json", ...(options.headers || {}) };
+      const token = getToken();
+      if (token) headers["Authorization"] = "Bearer " + token;
+      const res = await fetch(path, { ...options, headers });
+      let data = null;
+      try { data = await res.json(); } catch (e) {}
+      return { ok: res.ok, status: res.status, data };
+    }
+
+    // Show the right nav items depending on login state
+    (function setupNav() {
+      const token = getToken();
+      const name = localStorage.getItem("userName");
+      if (token) {
+        document.getElementById("nav-user").textContent = name ? "Hi, " + name : "";
+        document.getElementById("nav-login").style.display = "none";
+        document.getElementById("nav-logout").style.display = "inline";
+      }
+      document.getElementById("nav-logout").addEventListener("click", (e) => {
+        e.preventDefault();
+        localStorage.removeItem("token");
+        localStorage.removeItem("userName");
+        window.location.href = "/login";
+      });
+    })();
+  </script>
+  {% block scripts %}{% endblock %}
+</body>
+</html>

@@ -3,6 +3,11 @@ from fastapi import Depends, FastAPI, Header, HTTPException
 from pydantic import BaseModel
 
 from database import get_connection
+from pathlib import Path
+
+from fastapi import Request
+from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.templating import Jinja2Templates
 
 app = FastAPI(title="Test Shop API")
 
@@ -177,3 +182,15 @@ def list_orders(user_id: int = Depends(current_user_id)):
     ).fetchall()
     conn.close()
     return [dict(r) for r in rows]
+# ---------- HTML pages ----------
+templates = Jinja2Templates(directory=Path(__file__).parent / "templates")
+
+
+@app.get("/", include_in_schema=False)
+def home():
+    return RedirectResponse(url="/login")
+
+
+@app.get("/login", response_class=HTMLResponse, include_in_schema=False)
+def login_page(request: Request):
+    return templates.TemplateResponse(request, "login.html")
