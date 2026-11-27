@@ -5,7 +5,8 @@ import sys
 import time
 import urllib.request
 from pathlib import Path
-
+from pages.login_page import LoginPage
+from playwright.sync_api import Page
 import pytest
 
 ROOT = Path(__file__).parent
@@ -60,3 +61,9 @@ def db():
     conn.row_factory = sqlite3.Row
     yield conn
     conn.close()
+@pytest.fixture
+def logged_in_page(page: Page) -> Page:
+    """A browser page already logged in as the seeded test user."""
+    LoginPage(page).open().login("test@example.com", "Password123")
+    page.wait_for_url("**/products")
+    return page
