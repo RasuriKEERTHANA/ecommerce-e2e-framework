@@ -7,6 +7,7 @@ import urllib.request
 from pathlib import Path
 from pages.login_page import LoginPage
 from playwright.sync_api import Page
+from utils.api_client import ApiClient
 import pytest
 
 ROOT = Path(__file__).parent
@@ -67,3 +68,19 @@ def logged_in_page(page: Page) -> Page:
     LoginPage(page).open().login("test@example.com", "Password123")
     page.wait_for_url("**/products")
     return page
+@pytest.fixture
+def api():
+    """An anonymous API client (no token)."""
+    return ApiClient(BASE)
+
+
+@pytest.fixture
+def auth_api():
+    """An API client logged in as the first seeded user."""
+    return ApiClient(BASE).authenticate("test@example.com", "Password123")
+
+
+@pytest.fixture
+def second_api():
+    """An API client logged in as the second seeded user."""
+    return ApiClient(BASE).authenticate("second@example.com", "Password123")
