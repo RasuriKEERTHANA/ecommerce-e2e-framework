@@ -205,3 +205,34 @@ def cart_page(request: Request):
 @app.get("/checkout", response_class=HTMLResponse, include_in_schema=False)
 def checkout_page(request: Request):
     return templates.TemplateResponse(request, "checkout.html")
+class CartUpdateRequest(BaseModel):
+    quantity: int
+
+
+@app.put("/api/cart/{product_id}")
+def update_cart_item(
+    product_id: int, body: CartUpdateRequest, user_id: int = Depends(current_user_id)
+):
+    if body.quantity < 1:
+        raise HTTPException(status_code=400, detail="Quantity must be at least 1")
+    conn = get_connection()
+    item = conn.execute(
+        "SELECT id FROM cart_items WHERE user_id = ? AND product_id = ?",
+        (user_id, product_id),
+    ).fetchone()
+    if item is None:
+        conn.close()
+        raise HTTPException(status_code=404, detail="Item not in cart")
+    product = conn.execute(
+        "SELECT stock FROM products WHERE id = ?", (product_id,)
+    ).fetchone()
+    if body.quantity > product["stock"]:
+        conn.close()
+        raise HTTPException(status_code=400, detail="Not enough stock")
+    conn.execute(
+        "UPDATE cart_items SET quantity = ? WHERE id = ?", (body.quantity, item["id"])
+    )
+    conn.commit()
+    cart = read_cart(conn, user_id)
+    conn.close()
+    return cart

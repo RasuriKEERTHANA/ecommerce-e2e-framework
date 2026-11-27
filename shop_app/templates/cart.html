@@ -45,12 +45,23 @@
       info.querySelector('[data-testid="cart-item-price"]').textContent = item.price.toFixed(2);
       info.querySelector('[data-testid="cart-item-total"]').textContent = item.line_total.toFixed(2);
 
+      const minus = document.createElement("button");
+      minus.textContent = "−";
+      minus.setAttribute("data-testid", "decrease-" + item.product_id);
+      minus.disabled = item.quantity <= 1;
+      minus.addEventListener("click", () => updateQty(item.product_id, item.quantity - 1));
+
+      const plus = document.createElement("button");
+      plus.textContent = "+";
+      plus.setAttribute("data-testid", "increase-" + item.product_id);
+      plus.addEventListener("click", () => updateQty(item.product_id, item.quantity + 1));
+
       const btn = document.createElement("button");
       btn.textContent = "Remove";
       btn.setAttribute("data-testid", "remove-" + item.product_id);
       btn.addEventListener("click", () => removeItem(item.product_id));
 
-      row.append(name, info, btn);
+      row.append(name, info, minus, plus, btn);
       itemsBox.appendChild(row);
     });
 
@@ -83,7 +94,18 @@
       msg.className = "error";
     }
   }
-
+  async function updateQty(productId, quantity) {
+    const res = await api("/api/cart/" + productId, {
+      method: "PUT",
+      body: JSON.stringify({ quantity }),
+    });
+    if (res.ok) {
+      renderCart(res.data);
+    } else {
+      msg.textContent = res.data && res.data.detail ? res.data.detail : "Could not update quantity";
+      msg.className = "error";
+    }
+  }
   checkoutBtn.addEventListener("click", () => { window.location.href = "/checkout"; });
   loadCart();
 </script>
