@@ -8,6 +8,7 @@ from pathlib import Path
 from pages.login_page import LoginPage
 from playwright.sync_api import Page
 from utils.api_client import ApiClient
+from utils.db_helper import DbHelper
 import pytest
 
 ROOT = Path(__file__).parent
@@ -84,3 +85,7 @@ def auth_api():
 def second_api():
     """An API client logged in as the second seeded user."""
     return ApiClient(BASE).authenticate("second@example.com", "Password123")
+@pytest.fixture
+def db_helper(db):
+    """SQL shortcuts built on the db connection."""
+    return DbHelper(db)
