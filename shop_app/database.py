@@ -1,11 +1,15 @@
+import os
 import sqlite3
 from pathlib import Path
 
-DB_PATH = Path(__file__).parent / "shop.db"
+
+def get_db_path():
+    # Tests set SHOP_DB_PATH so they use a separate database file
+    return os.environ.get("SHOP_DB_PATH", str(Path(__file__).parent / "shop.db"))
 
 
 def get_connection():
-    conn = sqlite3.connect(DB_PATH)
+    conn = sqlite3.connect(get_db_path())
     conn.row_factory = sqlite3.Row  # access columns by name
     return conn
 
